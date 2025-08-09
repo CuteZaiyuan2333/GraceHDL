@@ -1,0 +1,96 @@
+# GraceHDL 基本门电路展示
+# 展示基本的组合逻辑门设计
+
+# 与门
+module and_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a and b
+
+# 或门
+module or_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a or b
+
+# 非门
+module not_gate:
+    input(
+        wire a
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = not a
+
+# 异或门
+module xor_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a xor b
+
+# 全加器
+module full_adder:
+    input(
+        wire a,
+        wire b,
+        wire cin
+    )
+    output(
+        wire sum,
+        wire cout
+    )
+    
+    assign:
+        sum = a xor b xor cin
+        cout = (a and b) or (cin and (a xor b))
+
+# 4位与门阵列
+module and_array_4bit:
+    input(
+        wire(3, 0) a,
+        wire(3, 0) b
+    )
+    output(
+        wire(3, 0) y
+    )
+    
+    assign:
+        y = a and b
+
+# 2选1多路选择器
+module mux_2to1:
+    input(
+        wire a,
+        wire b,
+        wire sel
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = (not sel and a) or (sel and b)

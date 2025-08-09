@@ -1,0 +1,126 @@
+# GraceHDL 基本门电路展示
+# 展示基本的组合逻辑门设计
+
+# 与门
+module and_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a and b
+
+# 或门
+module or_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a or b
+
+# 非门
+module not_gate:
+    input(
+        wire a
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = not a
+
+# 异或门
+module xor_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a xor b
+
+# 全加器
+module full_adder:
+    input(
+        wire a,
+        wire b,
+        wire cin
+    )
+    output(
+        wire sum,
+        wire cout
+    )
+    
+    assign:
+        sum = a xor b xor cin
+        cout = (a and b) or (cin and (a xor b))
+
+# 4位与门阵列
+module and_array_4bit:
+    input(
+        wire(3, 0) a,
+        wire(3, 0) b
+    )
+    output(
+        wire(3, 0) y
+    )
+    
+    assign:
+        y = a and b
+
+# 2选1多路选择器
+module mux_2to1:
+    input(
+        wire a,
+        wire b,
+        wire sel
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = (not sel and a) or (sel and b)
+
+# 3-8译码器
+module decoder_3to8:
+    input(
+        wire(2, 0) addr
+    )
+    output(
+        wire(7, 0) out
+    )
+    
+    always:
+        case addr:
+            (0, d, 3):
+                out = (1, d, 8)
+            (1, d, 3):
+                out = (2, d, 8)
+            (2, d, 3):
+                out = (4, d, 8)
+            (3, d, 3):
+                out = (8, d, 8)
+            (4, d, 3):
+                out = (16, d, 8)
+            (5, d, 3):
+                out = (32, d, 8)
+            (6, d, 3):
+                out = (64, d, 8)
+            (7, d, 3):
+                out = (128, d, 8)
+            default:
+                out = (0, d, 8)

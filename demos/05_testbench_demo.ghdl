@@ -1,0 +1,121 @@
+# GraceHDL 基本模块展示
+# 展示基本的数字逻辑设计
+
+# 简单计数器
+module simple_counter:
+parameter(
+    WIDTH = 4
+)
+input(
+    wire clk,
+    wire rst,
+    wire enable
+)
+output(
+    wire(WIDTH-1, 0) count
+)
+
+register(
+    reg(WIDTH-1, 0) count_reg
+)
+
+run(clk.posedge):
+    if rst:
+        count_reg = 0
+    elif enable:
+        count_reg = count_reg + 1
+
+assign:
+    count = count_reg
+
+# 简单ALU
+module simple_alu:
+parameter(
+    WIDTH = 4
+)
+input(
+    wire(WIDTH-1, 0) a,
+    wire(WIDTH-1, 0) b,
+    wire(1, 0) op
+)
+output(
+    wire(WIDTH-1, 0) result
+)
+
+always:
+    case op:
+        0:  # ADD
+            result = a + b
+        1:  # SUB
+            result = a - b
+        2:  # AND
+            result = a & b
+        3:  # OR
+            result = a | b
+        default:
+            result = 0
+
+# 简单状态机
+module simple_fsm:
+input(
+    wire clk,
+    wire rst,
+    wire input_signal
+)
+output(
+    wire output_signal
+)
+
+register(
+    reg(1, 0) state
+)
+
+run(clk.posedge):
+    if rst:
+        state = 0
+    else:
+        case state:
+            0:  # IDLE
+                if input_signal:
+                    state = 1
+            1:  # ACTIVE
+                if input_signal:
+                    state = 2
+                else:
+                    state = 0
+            2:  # DONE
+                state = 0
+            default:
+                state = 0
+
+assign:
+    output_signal = (state == 2)
+
+# 简单多路选择器
+module simple_mux:
+parameter(
+    WIDTH = 4
+)
+input(
+    wire(WIDTH-1, 0) in0,
+    wire(WIDTH-1, 0) in1,
+    wire(WIDTH-1, 0) in2,
+    wire(WIDTH-1, 0) in3,
+    wire(1, 0) sel
+)
+output(
+    wire(WIDTH-1, 0) out
+)
+
+always:
+    case sel:
+        0:
+            out = in0
+        1:
+            out = in1
+        2:
+            out = in2
+        3:
+            out = in3
+        default:
+            out = 0

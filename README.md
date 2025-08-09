@@ -83,6 +83,14 @@ module state_machine:
         state = current_state
 ```
 
+## 文档
+
+- **[GraceHDL 语法标准 v3.0](GraceHDL_语法标准_v3.0.md)** - 完整的语法标准文档（基于实际demo验证）
+- **[用户指南](USER_GUIDE.md)** - 详细的使用指南
+- **[开发进度](DEVELOPMENT_PROGRESS.md)** - 项目开发状态
+- **[高级功能路线图](ADVANCED_FEATURES_ROADMAP.md)** - 未来功能规划
+- **[legacy_docs/](legacy_docs/)** - 历史文档归档
+
 ## 项目结构
 
 - `src/` - 编译器核心代码
@@ -91,10 +99,11 @@ module state_machine:
   - `ast_nodes.py` - AST节点定义
   - `verilog_generator.py` - Verilog代码生成器
   - `compiler.py` - 编译器主接口
+- `demos/` - 完整的语法演示示例
 - `examples/` - 语言特性示例
 - `counter_project/` - 完整项目示例
-- `archive/` - 历史文档和代码
-- `docs/` - 语法规范和文档
+- `tests/` - 测试文件
+- `archive/` - 历史代码归档
 
 ## 当前状态
 

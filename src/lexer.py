@@ -23,9 +23,12 @@ class GraceHDLLexer:
         'if': 'IF',
         'else': 'ELSE',
         'elsif': 'ELSIF',
+        'elif': 'ELIF',  # 添加elif关键字
         'case': 'CASE',
         'default': 'DEFAULT',
         'for': 'FOR',
+        'in': 'IN',
+        'range': 'RANGE',
         'while': 'WHILE',
         'posedge': 'POSEDGE',
         'negedge': 'NEGEDGE',
@@ -35,6 +38,48 @@ class GraceHDLLexer:
         'begin': 'BEGIN',
         'end': 'END',
         'initial': 'INITIAL',
+        'to': 'TO',  # 新增 to 关键字
+        
+        # 枚举类型支持
+        'enum': 'ENUM',
+        
+        # 函数定义支持
+        'def': 'DEF',
+        'return': 'RETURN',
+        
+        # 接口定义支持
+        'interface': 'INTERFACE',
+        'port': 'PORT',
+        
+        # 生成语句支持
+        'generate': 'GENERATE',
+        
+        # 断言支持
+        'assert': 'ASSERT',
+        'cover': 'COVER',
+        'implies': 'IMPLIES',
+        
+        # 测试台支持
+        'testbench': 'TESTBENCH',
+        'clock': 'CLOCK',
+        'with': 'WITH',
+        'period': 'PERIOD',
+        'signal': 'SIGNAL',
+        'wait': 'WAIT',
+        'dump_waves': 'DUMP_WAVES',
+        'report_coverage': 'REPORT_COVERAGE',
+        
+        # 多时钟域支持
+        'clocked_by': 'CLOCKED_BY',
+        
+        # 其他关键字
+        'and': 'AND_KW',
+        'or': 'OR_KW',
+        'not': 'NOT_KW',
+        'xor': 'XOR_KW',
+        'reduce_and': 'REDUCE_AND',
+        'reduce_or': 'REDUCE_OR',
+        'reduce_xor': 'REDUCE_XOR',
     }
 
     # 标记列表
@@ -65,7 +110,7 @@ class GraceHDLLexer:
         
         # 特殊标记
         'NEWLINE', 'INDENT', 'DEDENT',
-        'AT', 'HASH',
+        'AT',
     ] + list(reserved.values())
 
     # 简单标记
@@ -107,7 +152,6 @@ class GraceHDLLexer:
     t_DOT = r'\.'
     t_QUESTION = r'\?'
     t_AT = r'@'
-    t_HASH = r'\#'
 
     # 忽略空格和制表符（但不忽略换行符）
     t_ignore = ' \t'
@@ -119,14 +163,11 @@ class GraceHDLLexer:
         self.paren_level = 0
         self.pending_dedents = 0  # 待处理的DEDENT数量
 
-    def t_COMMENT_SINGLE(self, t):
-        r'//.*'
-        pass  # 忽略单行注释
-    
-    def t_COMMENT_MULTI(self, t):
-        r'/\*(.|\n)*?\*/'
-        t.lexer.lineno += t.value.count('\n')
-        pass  # 忽略多行注释
+    def t_COMMENT(self, t):
+        r'//.*|/\*(.|\n)*?\*/|\#.*'
+        if t.value.startswith('/*'):
+            t.lexer.lineno += t.value.count('\n')
+        return t  # 返回注释token，让语法分析器处理
 
     def t_NEW_NUMBER_FORMAT(self, t):
         r'\(\s*[0-9a-fA-F]+\s*,\s*[dbho]\s*,\s*\d+\s*\)'  # 支持各种进制的数字格式
@@ -206,16 +247,57 @@ class GraceHDLLexer:
         self.pending_dedents = 0
 
     def token(self):
-        """简化的token方法，不处理缩进"""
-        return self.lexer.token()
+        """处理缩进的token方法"""
+        # 如果有待处理的DEDENT，先返回它们
+        if self.pending_dedents > 0:
+            self.pending_dedents -= 1
+            tok = lex.LexToken()
+            tok.type = 'DEDENT'
+            tok.value = None
+            tok.lineno = self.lexer.lineno
+            tok.lexpos = self.lexer.lexpos
+            return tok
+        
+        # 获取下一个token
+        tok = self.lexer.token()
+        if not tok:
+            # 文件结束，生成所有剩余的DEDENT
+            if len(self.indent_stack) > 1:
+                self.indent_stack.pop()
+                tok = lex.LexToken()
+                tok.type = 'DEDENT'
+                tok.value = None
+                tok.lineno = self.lexer.lineno
+                tok.lexpos = self.lexer.lexpos
+                return tok
+            return None
+        
+        # 如果是换行符且在行首，检查缩进
+        if tok.type == 'NEWLINE' and self.at_line_start:
+            self.at_line_start = True
+            return tok
+        elif self.at_line_start and tok.type not in ['NEWLINE', 'COMMENT']:
+            # 处理缩进
+            self.at_line_start = False
+            indent_tok = self.handle_indentation()
+            if indent_tok:
+                # 将当前token放回，先返回缩进token
+                self.lexer.lexpos -= len(str(tok.value)) if tok.value else 0
+                return indent_tok
+        
+        return tok
 
     def handle_indentation(self):
         """处理缩进逻辑"""
-        # 计算当前行的缩进级别
-        indent_level = 0
+        # 回退到行首来计算缩进
         pos = self.lexer.lexpos
         
-        # 跳过当前位置的空白字符来计算缩进
+        # 找到行首
+        while pos > 0 and self.lexer.lexdata[pos - 1] != '\n':
+            pos -= 1
+        
+        # 计算当前行的缩进级别
+        indent_level = 0
         while pos < len(self.lexer.lexdata) and self.lexer.lexdata[pos] in ' \t':
             if self.lexer.lexdata[pos] == ' ':
                 indent_level += 1
@@ -224,7 +306,7 @@ class GraceHDLLexer:
             pos += 1
 
         # 如果是空行或注释行，跳过缩进处理
-        if pos >= len(self.lexer.lexdata) or self.lexer.lexdata[pos] in '\n/':
+        if pos >= len(self.lexer.lexdata) or self.lexer.lexdata[pos] in '\n#':
             return None  # 不返回缩进标记，继续正常处理
 
         current_indent = self.indent_stack[-1]
@@ -232,8 +314,6 @@ class GraceHDLLexer:
         if indent_level > current_indent:
             # 缩进增加
             self.indent_stack.append(indent_level)
-            # 跳过空白字符
-            self.lexer.lexpos = pos
             tok = lex.LexToken()
             tok.type = 'INDENT'
             tok.value = None
@@ -248,8 +328,6 @@ class GraceHDLLexer:
                 dedent_count += 1
             
             if dedent_count > 0:
-                # 跳过空白字符
-                self.lexer.lexpos = pos
                 tok = lex.LexToken()
                 tok.type = 'DEDENT'
                 tok.value = None
@@ -258,9 +336,6 @@ class GraceHDLLexer:
                 # 设置待处理的DEDENT数量
                 self.pending_dedents = dedent_count - 1
                 return tok
-        else:
-            # 缩进级别相同，跳过空白字符
-            self.lexer.lexpos = pos
         
         # 缩进级别相同，不返回缩进标记
         return None

@@ -1,0 +1,174 @@
+# GraceHDL 参数化模块展示
+# 展示参数化设计和模块复用
+
+# 参数化计数器
+module parameterized_counter:
+parameter(
+    WIDTH = 8,
+    MAX_COUNT = 255
+)
+input(
+    wire clk,
+    wire rst,
+    wire enable
+)
+output(
+    wire(WIDTH-1, 0) count,
+    wire overflow
+)
+
+register(
+    reg(WIDTH-1, 0) count_reg
+)
+
+run(clk.posedge):
+    if rst:
+        count_reg = 0
+    elif enable:
+        if count_reg == MAX_COUNT:
+            count_reg = 0
+        else:
+            count_reg = count_reg + 1
+
+assign:
+    count = count_reg
+    overflow = (count_reg == MAX_COUNT) and enable
+
+# 参数化移位寄存器
+module parameterized_shift_register:
+parameter(
+    WIDTH = 8
+)
+input(
+    wire clk,
+    wire rst,
+    wire shift_enable,
+    wire serial_in
+)
+output(
+    wire(WIDTH-1, 0) parallel_out,
+    wire serial_out
+)
+
+register(
+    reg(WIDTH-1, 0) shift_reg
+)
+
+run(clk.posedge):
+    if rst:
+        shift_reg = 0
+    elif shift_enable:
+        shift_reg = shift_reg[WIDTH-2, 0] + serial_in
+
+assign:
+    parallel_out = shift_reg
+    serial_out = shift_reg[WIDTH-1]
+
+# 参数化ALU
+module parameterized_alu:
+parameter(
+    WIDTH = 8
+)
+input(
+    wire(WIDTH-1, 0) a,
+    wire(WIDTH-1, 0) b,
+    wire(2, 0) op
+)
+output(
+    wire(WIDTH-1, 0) result,
+    wire zero_flag,
+    wire carry_flag
+)
+
+register(
+    reg(WIDTH, 0) temp_result
+)
+
+always:
+    case op:
+        0:  # ADD
+            temp_result = a + b
+        1:  # SUB
+            temp_result = a - b
+        2:  # AND
+            temp_result = a & b
+        3:  # OR
+            temp_result = a | b
+        4:  # XOR
+            temp_result = a ^ b
+        5:  # NOT A
+            temp_result = ~a
+        6:  # SHL
+            temp_result = a << 1
+        7:  # SHR
+            temp_result = a >> 1
+        default:
+            temp_result = 0
+
+assign:
+    result = temp_result[WIDTH-1, 0]
+    carry_flag = temp_result[WIDTH]
+    zero_flag = (result == 0)
+
+# 参数化存储器
+module parameterized_memory:
+parameter(
+    ADDR_WIDTH = 8,
+    DATA_WIDTH = 8,
+    DEPTH = 256
+)
+input(
+    wire clk,
+    wire we,
+    wire(ADDR_WIDTH-1, 0) addr,
+    wire(DATA_WIDTH-1, 0) data_in
+)
+output(
+    wire(DATA_WIDTH-1, 0) data_out
+)
+
+register(
+    reg(DATA_WIDTH-1, 0) memory[DEPTH-1, 0],
+    reg(DATA_WIDTH-1, 0) data_out_reg
+)
+
+run(clk.posedge):
+    if we:
+        memory[addr] = data_in
+    data_out_reg = memory[addr]
+
+assign:
+    data_out = data_out_reg
+
+# 参数化分频器
+module parameterized_divider:
+parameter(
+    DIVIDE_RATIO = 4,
+    COUNTER_WIDTH = 8
+)
+input(
+    wire clk_in,
+    wire rst
+)
+output(
+    wire clk_out
+)
+
+register(
+    reg(COUNTER_WIDTH-1, 0) counter,
+    reg clk_out_reg
+)
+
+run(clk_in.posedge):
+    if rst:
+        counter = 0
+        clk_out_reg = 0
+    else:
+        if counter == DIVIDE_RATIO - 1:
+            counter = 0
+            clk_out_reg = ~clk_out_reg
+        else:
+            counter = counter + 1
+
+assign:
+    clk_out = clk_out_reg

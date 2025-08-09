@@ -1,0 +1,16 @@
+module decoder_simple:
+    input(
+        wire(2, 0) addr
+    )
+    output(
+        wire(7, 0) out
+    )
+    
+    always:
+        case addr:
+            (0, d, 3):
+                out = (1, d, 8)
+            (1, d, 3):
+                out = (2, d, 8)
+            default:
+                out = (0, d, 8)

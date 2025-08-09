@@ -1,0 +1,164 @@
+# GraceHDL 时序逻辑展示
+# 展示基本的时序逻辑设计
+
+# D触发器
+module d_flip_flop:
+    input(
+        wire clk,
+        wire rst,
+        wire d
+    )
+    output(
+        wire q
+    )
+    
+    register(
+        reg q_reg
+    )
+    
+    run(clk.posedge):
+        if rst:
+            q_reg = 0
+        else:
+            q_reg = d
+    
+    assign:
+        q = q_reg
+
+# 8位计数器
+module counter_8bit:
+    input(
+        wire clk,
+        wire rst,
+        wire enable
+    )
+    output(
+        wire(7, 0) count
+    )
+    
+    register(
+        reg(7, 0) count_reg
+    )
+    
+    run(clk.posedge):
+        if rst:
+            count_reg = 0
+        elif enable:
+            count_reg = count_reg + 1
+    
+    assign:
+        count = count_reg
+
+# 移位寄存器
+module shift_register:
+    input(
+        wire clk,
+        wire rst,
+        wire shift_enable,
+        wire serial_in
+    )
+    output(
+        wire(7, 0) parallel_out,
+        wire serial_out
+    )
+    
+    register(
+        reg(7, 0) shift_reg
+    )
+    
+    run(clk.posedge):
+        if rst:
+            shift_reg = 0
+        elif shift_enable:
+            shift_reg = shift_reg[6, 0] + serial_in
+    
+    assign:
+        parallel_out = shift_reg
+        serial_out = shift_reg[7]
+
+# 可加载计数器
+module loadable_counter:
+    input(
+        wire clk,
+        wire rst,
+        wire load,
+        wire enable,
+        wire(7, 0) load_value
+    )
+    output(
+        wire(7, 0) count
+    )
+    
+    register(
+        reg(7, 0) count_reg
+    )
+    
+    run(clk.posedge):
+        if rst:
+            count_reg = 0
+        elif load:
+            count_reg = load_value
+        elif enable:
+            count_reg = count_reg + 1
+    
+    assign:
+        count = count_reg
+
+# 双向移位寄存器
+module bidirectional_shift_register:
+    input(
+        wire clk,
+        wire rst,
+        wire shift_enable,
+        wire direction,
+        wire serial_in_left,
+        wire serial_in_right
+    )
+    output(
+        wire(7, 0) parallel_out
+    )
+    
+    register(
+        reg(7, 0) shift_reg
+    )
+    
+    run(clk.posedge):
+        if rst:
+            shift_reg = 0
+        elif shift_enable:
+            if direction:
+                shift_reg = serial_in_right + shift_reg[7, 1]
+            else:
+                shift_reg = shift_reg[6, 0] + serial_in_left
+    
+    assign:
+        parallel_out = shift_reg
+
+# 分频器
+module frequency_divider:
+    input(
+        wire clk_in,
+        wire rst
+    )
+    output(
+        wire clk_out
+    )
+    
+    register(
+        reg(3, 0) counter,
+        reg clk_out_reg
+    )
+    
+    run(clk_in.posedge):
+        if rst:
+            counter = 0
+            clk_out_reg = 0
+        else:
+            if counter == 7:
+                counter = 0
+                clk_out_reg = ~clk_out_reg
+            else:
+                counter = counter + 1
+    
+    assign:
+        clk_out = clk_out_reg

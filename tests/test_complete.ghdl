@@ -1,0 +1,45 @@
+# GraceHDL 基本门电路展示
+# 展示基本的组合逻辑门设计
+
+# 与门
+module and_gate:
+    input(
+        wire a,
+        wire b
+    )
+    output(
+        wire y
+    )
+    
+    assign:
+        y = a and b
+
+# 3-8译码器
+module decoder_3to8:
+    input(
+        wire(2, 0) addr
+    )
+    output(
+        wire(7, 0) out
+    )
+    
+    always:
+        case addr:
+            (0, d, 3):
+                out = (1, d, 8)
+            (1, d, 3):
+                out = (2, d, 8)
+            (2, d, 3):
+                out = (4, d, 8)
+            (3, d, 3):
+                out = (8, d, 8)
+            (4, d, 3):
+                out = (16, d, 8)
+            (5, d, 3):
+                out = (32, d, 8)
+            (6, d, 3):
+                out = (64, d, 8)
+            (7, d, 3):
+                out = (128, d, 8)
+            default:
+                out = (0, d, 8)
