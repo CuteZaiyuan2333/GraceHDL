@@ -1,0 +1,237 @@
+# GraceHDL run 与 always 语句演示示例
+
+# 示例1：简单计数器 - 展示时序逻辑 vs 组合逻辑
+module simple_counter:
+    input(
+        wire clk,
+        wire rst,
+        wire enable
+    )
+    output(
+        wire(7:0) count,
+        wire is_max,
+        wire is_even
+    )
+    register(
+        reg(7:0) count_reg
+    )
+    parameter(
+        MAX_COUNT = (255, d, 8)
+    )
+    
+    # 时序逻辑：在时钟边沿更新计数器状态
+    run (clk.posedge):
+        if rst:
+            count_reg = (0, d, 8)                    # 复位时清零
+        elif enable:
+            if count_reg == MAX_COUNT:
+                count_reg = (0, d, 8)                # 达到最大值时回零
+            else:
+                count_reg = count_reg + (1, d, 8)    # 正常计数
+    
+    # 组合逻辑：根据当前状态计算输出
+    always:
+        count = count_reg                            # 输出当前计数值
+        is_max = (count_reg == MAX_COUNT)            # 判断是否达到最大值
+        is_even = (count_reg[0] == (0, d, 1))        # 判断是否为偶数
+
+# 示例2：状态机 - 展示复杂时序逻辑
+module traffic_light:
+    input(
+        wire clk,
+        wire rst,
+        wire sensor  # 车辆检测传感器
+    )
+    output(
+        wire red,
+        wire yellow,
+        wire green
+    )
+    register(
+        reg(1:0) current_state,
+        reg(7:0) timer
+    )
+    parameter(
+        RED_STATE = (0, d, 2),
+        YELLOW_STATE = (1, d, 2),
+        GREEN_STATE = (2, d, 2),
+        RED_TIME = (50, d, 8),      # 红灯50个时钟周期
+        YELLOW_TIME = (10, d, 8),   # 黄灯10个时钟周期
+        GREEN_TIME = (30, d, 8)     # 绿灯30个时钟周期
+    )
+    
+    # 时序逻辑：状态机状态转换
+    run (clk.posedge):
+        if rst:
+            current_state = RED_STATE
+            timer = (0, d, 8)
+        else:
+            timer = timer + (1, d, 8)
+            case current_state:
+                RED_STATE:
+                    if timer >= RED_TIME:
+                        current_state = GREEN_STATE
+                        timer = (0, d, 8)
+                GREEN_STATE:
+                    if timer >= GREEN_TIME or not sensor:  # 绿灯时间到或无车辆
+                        current_state = YELLOW_STATE
+                        timer = (0, d, 8)
+                YELLOW_STATE:
+                    if timer >= YELLOW_TIME:
+                        current_state = RED_STATE
+                        timer = (0, d, 8)
+    
+    # 组合逻辑：根据状态输出灯光控制
+    always:
+        red = (current_state == RED_STATE)
+        yellow = (current_state == YELLOW_STATE)
+        green = (current_state == GREEN_STATE)
+
+# 示例3：ALU - 展示纯组合逻辑
+module simple_alu:
+    input(
+        wire(7:0) a,
+        wire(7:0) b,
+        wire(2:0) op_code
+    )
+    output(
+        wire(7:0) result,
+        wire zero_flag,
+        wire carry_flag
+    )
+    register(
+        # ALU是纯组合逻辑，不需要寄存器
+    )
+    parameter(
+        OP_ADD = (0, d, 3),
+        OP_SUB = (1, d, 3),
+        OP_AND = (2, d, 3),
+        OP_OR = (3, d, 3),
+        OP_XOR = (4, d, 3),
+        OP_SHL = (5, d, 3),
+        OP_SHR = (6, d, 3)
+    )
+    
+    # 纯组合逻辑：输入变化时输出立即变化
+    always:
+        case op_code:
+            OP_ADD:
+                {carry_flag, result} = a + b
+            OP_SUB:
+                {carry_flag, result} = a - b
+            OP_AND:
+                result = a & b
+                carry_flag = (0, d, 1)
+            OP_OR:
+                result = a | b
+                carry_flag = (0, d, 1)
+            OP_XOR:
+                result = a ^ b
+                carry_flag = (0, d, 1)
+            OP_SHL:
+                result = a << (1, d, 1)
+                carry_flag = a[7]
+            OP_SHR:
+                result = a >> (1, d, 1)
+                carry_flag = a[0]
+            default:
+                result = (0, d, 8)
+                carry_flag = (0, d, 1)
+        
+        zero_flag = (result == (0, d, 8))
+
+# 示例4：寄存器文件 - 展示时序逻辑与组合逻辑的配合
+module register_file:
+    input(
+        wire clk,
+        wire rst,
+        wire write_enable,
+        wire(2:0) read_addr1,
+        wire(2:0) read_addr2,
+        wire(2:0) write_addr,
+        wire(7:0) write_data
+    )
+    output(
+        wire(7:0) read_data1,
+        wire(7:0) read_data2
+    )
+    register(
+        reg(7:0) registers[8]  # 8个8位寄存器
+    )
+    
+    # 时序逻辑：写操作需要时钟同步
+    run (clk.posedge):
+        if rst:
+            # 复位所有寄存器
+            registers[0] = (0, d, 8)
+            registers[1] = (0, d, 8)
+            registers[2] = (0, d, 8)
+            registers[3] = (0, d, 8)
+            registers[4] = (0, d, 8)
+            registers[5] = (0, d, 8)
+            registers[6] = (0, d, 8)
+            registers[7] = (0, d, 8)
+        elif write_enable:
+            registers[write_addr] = write_data
+    
+    # 组合逻辑：读操作立即响应
+    always:
+        read_data1 = registers[read_addr1]
+        read_data2 = registers[read_addr2]
+
+# 示例5：边沿检测器 - 展示时序逻辑的记忆特性
+module edge_detector:
+    input(
+        wire clk,
+        wire rst,
+        wire signal_in
+    )
+    output(
+        wire pos_edge,    # 上升沿检测
+        wire neg_edge,    # 下降沿检测
+        wire any_edge     # 任意边沿检测
+    )
+    register(
+        reg signal_prev   # 记住上一个时钟周期的信号状态
+    )
+    
+    # 时序逻辑：记住上一个状态
+    run (clk.posedge):
+        if rst:
+            signal_prev = (0, d, 1)
+        else:
+            signal_prev = signal_in  # 保存当前信号状态供下次使用
+    
+    # 组合逻辑：比较当前和之前的状态
+    always:
+        pos_edge = signal_in & (~signal_prev)      # 当前为1，之前为0
+        neg_edge = (~signal_in) & signal_prev      # 当前为0，之前为1
+        any_edge = pos_edge | neg_edge             # 任意变化
+
+# 示例6：分频器 - 展示计数和输出的分离
+module clock_divider:
+    input(
+        wire clk_in,
+        wire rst
+    )
+    output(
+        wire clk_div2,    # 2分频
+        wire clk_div4,    # 4分频
+        wire clk_div8     # 8分频
+    )
+    register(
+        reg(2:0) counter
+    )
+    
+    # 时序逻辑：计数器更新
+    run (clk_in.posedge):
+        if rst:
+            counter = (0, d, 3)
+        else:
+            counter = counter + (1, d, 3)
+    
+    # 组合逻辑：从计数器生成分频时钟
+    always:
+        clk_div2 = counter[0]      # 最低位：2分频
+        clk_div4 = counter[1]      # 次低位：4分频  
+        clk_div8 = counter[2]      # 最高位：8分频

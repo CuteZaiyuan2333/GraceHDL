@@ -1,0 +1,115 @@
+# 简单CPU - 展示复杂模块的语法风格
+module simple_cpu:
+    input(
+        wire clk,
+        wire rst,
+        wire(7:0) instruction,
+        wire(7:0) data_in
+    )
+    output(
+        wire(7:0) data_out,
+        wire(7:0) address,
+        wire read_enable,
+        wire write_enable
+    )
+    register(
+        reg(7:0) accumulator,    # 累加器
+        reg(7:0) program_counter, # 程序计数器
+        reg(7:0) instruction_reg, # 指令寄存器
+        reg(2:0) cpu_state,      # CPU状态
+        reg(7:0) temp_reg        # 临时寄存器
+    )
+    
+    parameter(
+        # CPU状态定义
+        FETCH = 3'b000,
+        DECODE = 3'b001,
+        EXECUTE = 3'b010,
+        WRITEBACK = 3'b011,
+        HALT = 3'b100,
+        
+        # 指令操作码定义
+        NOP = 8'h00,    # 空操作
+        LOAD = 8'h01,   # 加载到累加器
+        STORE = 8'h02,  # 存储累加器
+        ADD = 8'h03,    # 加法
+        SUB = 8'h04,    # 减法
+        JMP = 8'h05,    # 跳转
+        HALT_OP = 8'hFF # 停机
+    )
+    
+    run (clk.posedge):
+        if rst:
+            accumulator = 0
+            program_counter = 0
+            instruction_reg = 0
+            cpu_state = FETCH
+            temp_reg = 0
+        else:
+            case cpu_state:
+                FETCH:
+                    instruction_reg = instruction
+                    cpu_state = DECODE
+                
+                DECODE:
+                    cpu_state = EXECUTE
+                
+                EXECUTE:
+                    case instruction_reg:
+                        NOP:
+                            program_counter = program_counter + 1
+                            cpu_state = FETCH
+                        
+                        LOAD:
+                            accumulator = data_in
+                            program_counter = program_counter + 1
+                            cpu_state = FETCH
+                        
+                        STORE:
+                            temp_reg = accumulator
+                            cpu_state = WRITEBACK
+                        
+                        ADD:
+                            accumulator = accumulator + data_in
+                            program_counter = program_counter + 1
+                            cpu_state = FETCH
+                        
+                        SUB:
+                            accumulator = accumulator - data_in
+                            program_counter = program_counter + 1
+                            cpu_state = FETCH
+                        
+                        JMP:
+                            program_counter = data_in
+                            cpu_state = FETCH
+                        
+                        HALT_OP:
+                            cpu_state = HALT
+                        
+                        default:
+                            program_counter = program_counter + 1
+                            cpu_state = FETCH
+                
+                WRITEBACK:
+                    program_counter = program_counter + 1
+                    cpu_state = FETCH
+                
+                HALT:
+                    # 保持停机状态
+                    cpu_state = HALT
+    
+    # 输出控制逻辑
+    always:
+        address = program_counter
+        data_out = temp_reg
+        
+        # 读使能：在FETCH和EXECUTE状态时需要读取
+        read_enable = (cpu_state == FETCH) or 
+                     ((cpu_state == EXECUTE) and 
+                      ((instruction_reg == LOAD) or 
+                       (instruction_reg == ADD) or 
+                       (instruction_reg == SUB) or 
+                       (instruction_reg == JMP)))
+        
+        # 写使能：在WRITEBACK状态时需要写入
+        write_enable = (cpu_state == WRITEBACK)

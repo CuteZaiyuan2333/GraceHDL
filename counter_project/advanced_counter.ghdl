@@ -1,0 +1,25 @@
+module advanced_counter:
+    input(wire clk, wire reset, wire enable, wire up_down)
+    output(reg(7:0) count, wire overflow, wire underflow)
+    register(reg(7:0) counter_reg)
+    
+    run (clk.posedge):
+        if reset:
+            counter_reg = (0, d, 8)
+        else:
+            if enable:
+                if up_down:
+                    if counter_reg == (255, d, 8):
+                        counter_reg = (0, d, 8)
+                    else:
+                        counter_reg = counter_reg + (1, d, 8)
+                else:
+                    if counter_reg == (0, d, 8):
+                        counter_reg = (255, d, 8)
+                    else:
+                        counter_reg = counter_reg - (1, d, 8)
+    
+    always:
+        count = counter_reg
+        overflow = (counter_reg == (255, d, 8)) & up_down & enable
+        underflow = (counter_reg == (0, d, 8)) & enable

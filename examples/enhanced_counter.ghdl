@@ -1,0 +1,62 @@
+# 增强型计数器 - 展示新语法风格
+module enhanced_counter:
+    input(
+        wire clk,
+        wire rst,
+        wire enable,
+        wire load,
+        wire(7:0) load_value,
+        wire up_down  # 1为向上计数，0为向下计数
+    )
+    output(
+        wire(7:0) count,
+        wire overflow,
+        wire underflow
+    )
+    register(
+        reg(7:0) counter_reg,
+        reg overflow_reg,
+        reg underflow_reg
+    )
+    
+    parameter(
+        MAX_COUNT = 8'hFF,
+        MIN_COUNT = 8'h00
+    )
+    
+    run (clk.posedge):
+        if rst:
+            counter_reg = MIN_COUNT
+            overflow_reg = 0
+            underflow_reg = 0
+        elif load:
+            counter_reg = load_value
+            overflow_reg = 0
+            underflow_reg = 0
+        elif enable:
+            if up_down:  # 向上计数
+                if counter_reg == MAX_COUNT:
+                    counter_reg = MIN_COUNT
+                    overflow_reg = 1
+                    underflow_reg = 0
+                else:
+                    counter_reg = counter_reg + 1
+                    overflow_reg = 0
+                    underflow_reg = 0
+            else:  # 向下计数
+                if counter_reg == MIN_COUNT:
+                    counter_reg = MAX_COUNT
+                    underflow_reg = 1
+                    overflow_reg = 0
+                else:
+                    counter_reg = counter_reg - 1
+                    underflow_reg = 0
+                    overflow_reg = 0
+        else:
+            overflow_reg = 0
+            underflow_reg = 0
+    
+    always:
+        count = counter_reg
+        overflow = overflow_reg
+        underflow = underflow_reg

@@ -1,0 +1,40 @@
+module traffic_light:
+    input(wire clk, wire reset, wire sensor)
+    output(reg red, reg yellow, reg green, reg(1:0) state)
+    register(reg(1:0) current_state, reg(7:0) timer)
+    
+    run (clk.posedge):
+        if reset:
+            current_state = (0, d, 2)
+            timer = (0, d, 8)
+        else:
+            if timer == (255, d, 8):
+                timer = (0, d, 8)
+                if current_state == (0, d, 2):
+                    current_state = (1, d, 2)
+                else:
+                    if current_state == (1, d, 2):
+                        current_state = (2, d, 2)
+                    else:
+                        if current_state == (2, d, 2):
+                            current_state = (0, d, 2)
+                        else:
+                            current_state = (0, d, 2)
+            else:
+                timer = timer + (1, d, 8)
+    
+    always:
+        state = current_state
+        if current_state == (0, d, 2):
+            red = (1, b, 1)
+            yellow = (0, b, 1)
+            green = (0, b, 1)
+        else:
+            if current_state == (1, d, 2):
+                red = (0, b, 1)
+                yellow = (1, b, 1)
+                green = (0, b, 1)
+            else:
+                red = (0, b, 1)
+                yellow = (0, b, 1)
+                green = (1, b, 1)

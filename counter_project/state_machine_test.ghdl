@@ -1,0 +1,17 @@
+module simple_case:
+    input(wire clk, wire reset, wire sel)
+    output(reg out)
+    register(reg result)
+    
+    run (clk.posedge):
+        if reset:
+            result = (0, b, 1)
+        else:
+            case sel:
+                (0, b, 1):
+                    result = (1, b, 1)
+                default:
+                    result = (0, b, 1)
+    
+    always:
+        out = result

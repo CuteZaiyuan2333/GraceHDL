@@ -1,0 +1,63 @@
+// 状态机示例 - 简单的交通灯控制器
+module traffic_light
+    input wire clk, reset
+    output reg[1:0] light
+    
+    // 状态定义
+    parameter IDLE = 2'b00
+    parameter GREEN = 2'b01
+    parameter YELLOW = 2'b10
+    parameter RED = 2'b11
+    
+    reg[1:0] state, next_state
+    reg[3:0] counter
+    
+    // 状态寄存器
+    always @(posedge clk or posedge reset)
+        if reset
+            state <= IDLE
+            counter <= 0
+        else
+            state <= next_state
+            if state != next_state
+                counter <= 0
+            else
+                counter <= counter + 1
+    
+    // 下一状态逻辑
+    always @(*)
+        case state
+            IDLE:
+                if counter >= 4'd2
+                    next_state = GREEN
+                else
+                    next_state = IDLE
+            GREEN:
+                if counter >= 4'd8
+                    next_state = YELLOW
+                else
+                    next_state = GREEN
+            YELLOW:
+                if counter >= 4'd2
+                    next_state = RED
+                else
+                    next_state = YELLOW
+            RED:
+                if counter >= 4'd6
+                    next_state = GREEN
+                else
+                    next_state = RED
+            default:
+                next_state = IDLE
+    
+    // 输出逻辑
+    always @(*)
+        case state
+            GREEN:
+                light = 2'b01
+            YELLOW:
+                light = 2'b10
+            RED:
+                light = 2'b11
+            default:
+                light = 2'b00
